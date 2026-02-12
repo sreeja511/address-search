@@ -22,7 +22,13 @@ public class AddressService {
 
         Query query = MultiMatchQuery.of(m -> m
                 .query(q)
-                .fields("street", "city", "fullAddress")
+                .fields(
+                        "fullAddress^3",   // highest priority
+                        "street^2",        // medium priority
+                        "city"             // normal priority
+                )
+                .fuzziness("AUTO")        // handles typos automatically
+                .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)
         )._toQuery();
 
         var searchQuery = NativeQuery.builder() // wrasps into pring native query object
