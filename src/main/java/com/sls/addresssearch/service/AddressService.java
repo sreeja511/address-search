@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.sls.addresssearch.model.Address;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import com.sls.addresssearch.dto.AddressSuggestionDTO;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -17,23 +18,27 @@ public class AddressService {
         this.operations = operations;
     }
 
-    public List<Address> search(String q) {
+    public List<AddressSuggestionDTO> search(String q) {
 
         Query query = MultiMatchQuery.of(m -> m
                 .query(q)
                 .fields("street", "city", "fullAddress")
-                )._toQuery();
+        )._toQuery();
 
-        var searchQuery = NativeQuery.builder()// searchQuery is a search request object.It contains
-                                      // instructions, not data.
+        var searchQuery = NativeQuery.builder() // wrasps into pring native query object
                 .withQuery(query)
                 .withMaxResults(5)
                 .build();
 
         return operations.search(searchQuery, Address.class)
-                .stream()                    // Stream<SearchHit<Address>>
-                .map(hit -> hit.getContent())// Extract Address
-                .toList();                   // Convert to List
+                .stream()
+                .map(hit -> hit.getContent())
+                .map(a -> new AddressSuggestionDTO(
+                        a.fullAddress(),
+                        a.street()
+                ))
+                .toList();
+                     // Convert to List
 
 
 //        We pass Address.class so Spring knows to convert the JSON results from Elasticsearch into
